@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recruitment Analytics Dashboard | Megha Gowda</title>
+<meta name="description" content="Excel dashboard analysing the hiring funnel, recruiter and source performance, cost per hire and time to hire for 500 candidates.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #fafbfc;
+  --surface: #ffffff;
+  --ink: #1d2733;
+  --muted: #566272;
+  --rule: #d9dee5;
+  --navy: #17375e;
+  --on-navy: #ffffff;
+  --link: #17539b;
+  --lavender: #cdbfe0;
+  --sky: #b5d6e4;
+  --peach: #fbd5b5;
+  --sage: #d3e0b0;
+  --rose: #e6b8b7;
+  --blue: #b7c9e6;
+  --bar-ink: #1d2733;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0f1722;
+    --surface: #16212f;
+    --ink: #e8edf3;
+    --muted: #9fadbd;
+    --rule: #2b394b;
+    --navy: #1b3f6b;
+    --link: #8db9f0;
+  }
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 1rem; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Libre Franklin", "Segoe UI", Arial, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-text-size-adjust: 100%;
+}
+a { color: var(--link); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 3px solid var(--link); outline-offset: 3px; border-radius: 2px; }
+.wrap { max-width: 68rem; margin: 0 auto; padding: 0 1.25rem; }
+.prose { max-width: 42rem; }
+
+/* banner, echoes the dashboard header */
+.banner { background: var(--navy); color: var(--on-navy); padding: 3rem 0 2.5rem; }
+.banner h1 { margin: 0; font-size: clamp(2rem, 5.2vw, 3.4rem); line-height: 1.08; font-weight: 800; letter-spacing: -0.02em; max-width: 20ch; }
+.banner p { margin: 1.1rem 0 0; max-width: 40rem; font-size: 1.15rem; color: #dbe6f4; }
+.banner .links { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; margin-top: 1.6rem; font-weight: 500; }
+.banner .links a { color: var(--on-navy); }
+.banner .links a:focus-visible { outline-color: #fff; }
+.banner .by { margin-top: 1.6rem; font-size: 0.95rem; color: #b9c9de; }
+
+/* hero image */
+.shot { margin: -1.25rem auto 0; position: relative; }
+.shot a { display: block; background: var(--surface); border: 1px solid var(--rule); box-shadow: 0 1px 0 var(--rule); }
+.shot img { display: block; width: 100%; height: auto; }
+.shot figcaption { margin-top: 0.6rem; font-size: 0.9rem; color: var(--muted); }
+
+section { padding: 3.25rem 0 0; }
+h2 { margin: 0 0 1rem; font-size: 1.65rem; line-height: 1.2; font-weight: 800; letter-spacing: -0.01em; }
+h3 { margin: 0 0 0.3rem; font-size: 1.05rem; font-weight: 600; }
+p { margin: 0 0 1rem; }
+
+/* funnel built from the real counts */
+.funnel { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 0.5rem; }
+.funnel li { display: grid; grid-template-columns: 8.5rem 1fr; align-items: center; gap: 0.9rem; }
+.funnel .stage { font-weight: 500; }
+.funnel .track { position: relative; height: 2.2rem; }
+.funnel .bar { height: 100%; width: var(--w); min-width: 7.5rem; background: var(--c); color: var(--bar-ink); display: flex; align-items: center; justify-content: space-between; padding: 0 0.7rem; font-variant-numeric: tabular-nums; font-weight: 600; }
+.funnel .bar span:last-child { font-weight: 400; font-size: 0.9rem; }
+.funnel-note { margin-top: 1rem; color: var(--muted); font-size: 0.95rem; max-width: 42rem; }
+
+/* findings ledger */
+.ledger { margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--ink); }
+.ledger li { display: grid; grid-template-columns: 13rem 1fr; gap: 0.5rem 2rem; padding: 1.1rem 0; border-bottom: 1px solid var(--rule); }
+.ledger .fig { font-size: 1.9rem; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.ledger p { margin: 0; max-width: 40rem; }
+.ledger strong { font-weight: 600; }
+
+/* corrections */
+.fixes { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 0; border-top: 1px solid var(--rule); }
+.fixes > div { padding: 1.2rem 1.5rem 1.2rem 0; border-bottom: 1px solid var(--rule); }
+.fixes .was { color: var(--muted); font-size: 0.95rem; }
+.fixes p { margin: 0.25rem 0 0; }
+
+/* process + recommendations */
+.steps { margin: 0; padding-left: 1.4rem; max-width: 42rem; }
+.steps li { padding-left: 0.3rem; margin-bottom: 0.55rem; }
+.recs { margin: 0; padding: 0; list-style: none; max-width: 42rem; }
+.recs li { padding: 0.8rem 0 0.8rem 1.1rem; border-left: 4px solid var(--c); margin-bottom: 0.7rem; }
+.recs li:nth-child(1) { --c: var(--blue); }
+.recs li:nth-child(2) { --c: var(--rose); }
+.recs li:nth-child(3) { --c: var(--sage); }
+.recs li:nth-child(4) { --c: var(--lavender); }
+.recs li:nth-child(5) { --c: var(--sky); }
+.recs li:nth-child(6) { --c: var(--peach); }
+.recs strong { font-weight: 600; }
+
+.tools { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0; margin: 0; list-style: none; }
+.tools li { border: 1px solid var(--rule); background: var(--surface); padding: 0.25rem 0.8rem; font-size: 0.95rem; border-radius: 2rem; }
+
+footer { margin-top: 4rem; padding: 2rem 0 3rem; border-top: 1px solid var(--rule); color: var(--muted); font-size: 0.95rem; }
+footer p { max-width: 42rem; }
+
+@media (max-width: 40rem) {
+  .banner { padding: 2.2rem 0 2rem; }
+  .funnel li { grid-template-columns: 1fr; gap: 0.2rem; }
+  .ledger li { grid-template-columns: 1fr; gap: 0.25rem; }
+  .ledger .fig { font-size: 1.7rem; }
+  .fixes > div { padding-right: 0; }
+}
+@media print {
+  .banner { background: none; color: #000; border-bottom: 2px solid #000; }
+  .banner p, .banner .by, .banner .links a { color: #000; }
+}
+</style>
+</head>
+<body>
+
+<header class="banner">
+  <div class="wrap">
+    <h1>Where do candidates drop out, and what does a hire really cost?</h1>
+    <p>An Excel dashboard built on 500 candidates and 60 requisitions. It follows the hiring funnel from sourced to joined and compares recruiters, sources, locations and departments.</p>
+    <div class="links">
+      <a href="https://github.com/meghagowda812/recruitment-analytics-dashboard">View the repository on GitHub</a>
+      <a href="Recruitment_Analytics_Dashboard.xlsx" download>Download the Excel workbook</a>
+      <a href="https://www.linkedin.com/in/megha-gowda-93a274221">LinkedIn</a>
+    </div>
+    <div class="by">Project 2 · Megha Gowda · HR analytics portfolio</div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <figure class="shot">
+      <a href="images/dashboard.jpg" aria-label="Open the full-size dashboard image">
+        <img src="images/dashboard.jpg" alt="Recruitment analytics dashboard with KPI tiles for applications, positions filled, conversion rates, time to hire, time to fill and cost per hire, followed by charts for recruiter performance, the hiring funnel, source, location and department, and a findings and suggestions section." width="1600" height="1200">
+      </a>
+      <figcaption>The finished dashboard. Four slicers filter every chart except the funnel and recruiter performance, which show overall totals.</figcaption>
+    </figure>
+
+    <section id="funnel">
+      <h2>The funnel: 500 applications, 129 joiners</h2>
+      <p class="prose">One in four applications ends in a joiner. The largest single loss comes after the offer, not before it.</p>
+      <ol class="funnel" aria-label="Hiring funnel from sourced to joined">
+        <li><span class="stage">Sourced</span><div class="track"><div class="bar" style="--w:100%; --c:var(--blue)"><span>500</span><span>100%</span></div></div></li>
+        <li><span class="stage">Screened</span><div class="track"><div class="bar" style="--w:90%; --c:var(--rose)"><span>450</span><span>90%</span></div></div></li>
+        <li><span class="stage">Interviewed</span><div class="track"><div class="bar" style="--w:58%; --c:var(--sage)"><span>290</span><span>58%</span></div></div></li>
+        <li><span class="stage">Offered</span><div class="track"><div class="bar" style="--w:43%; --c:var(--lavender)"><span>215</span><span>43%</span></div></div></li>
+        <li><span class="stage">Offer accepted</span><div class="track"><div class="bar" style="--w:35%; --c:var(--sky)"><span>175</span><span>35%</span></div></div></li>
+        <li><span class="stage">Joined</span><div class="track"><div class="bar" style="--w:25.8%; --c:var(--peach)"><span>129</span><span>25.8%</span></div></div></li>
+      </ol>
+      <p class="funnel-note">Percentages are shares of all sourced candidates. Of 215 offers, 40 were declined and 46 were accepted by candidates who never joined.</p>
+    </section>
+
+    <section id="findings">
+      <h2>What the data shows</h2>
+      <ul class="ledger">
+        <li><div class="fig">40%</div><p><strong>Of offers are lost after the offer.</strong> 215 offers produced 129 joiners. Contacting accepted candidates until their joining date is the most direct fix.</p></li>
+        <li><div class="fig">₹10,095</div><p><strong>Cost per hire.</strong> Total spend of ₹13.0 lakh divided by 129 hires. Agency costs ₹24,462 per hire, against ₹875 for Company Website.</p></li>
+        <li><div class="fig">45% vs 22%</div><p><strong>Company Website against Naukri.</strong> Company Website converts best of all sources. Naukri brings the most volume (161 candidates) but only 22% join.</p></li>
+        <li><div class="fig">34.7% vs 20.9%</div><p><strong>Recruiter A against Recruiter E.</strong> Recruiter A converts best at ₹7,150 per hire. Recruiter E converts worst at ₹13,121 per hire.</p></li>
+        <li><div class="fig">34 days</div><p><strong>Time to hire, application to joining.</strong> Candidates accept offers after 14.5 days on average. Requisitions take 46.4 days to fill, with HR the slowest (58.6 days) and Operations the fastest (38.5 days).</p></li>
+        <li><div class="fig">129 vs 101</div><p><strong>Hires against target headcount.</strong> Hiring did not follow the requisitions: 5 closed requisitions had no hires at all.</p></li>
+      </ul>
+    </section>
+
+    <section id="fixes">
+      <h2>Three metrics I corrected</h2>
+      <p class="prose">A first version of the dashboard looked right but measured the wrong things. Checking each metric against the raw data changed three numbers.</p>
+      <div class="fixes">
+        <div>
+          <h3>Cost per hire</h3>
+          <div class="was">First version: ₹2,661</div>
+          <p>The formula averaged cost only for candidates who joined and ignored what was spent on everyone else. Dividing total spend by hires gives ₹10,095.</p>
+        </div>
+        <div>
+          <h3>Time to hire</h3>
+          <div class="was">First version: 14.5 days</div>
+          <p>That figure counted days from application to offer acceptance. The dashboard now measures application to joining, which is 34 days. The 14.5 days is kept as time to accept an offer.</p>
+        </div>
+        <div>
+          <h3>Department filter</h3>
+          <div class="was">First version: 15 hires when filtered</div>
+          <p>Department was filled for only 60 of 500 candidate rows, so using the slicer dropped most of the data. A lookup on each candidate’s own Job ID fixed it.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="recommendations">
+      <h2>What I would recommend</h2>
+      <ul class="recs">
+        <li><strong>Reduce post-offer drop-off.</strong> Contact accepted candidates weekly until they join, and record why offers are declined.</li>
+        <li><strong>Rebalance sourcing spend.</strong> Move budget from Agency to Company Website and referrals, and use agencies only for hard-to-fill roles.</li>
+        <li><strong>Improve source quality.</strong> Tighten Naukri screening criteria, and find out why Employee Referral converts at only 20%.</li>
+        <li><strong>Coach the weakest recruiters.</strong> Share Recruiter A’s screening and follow-up practices with Recruiter E.</li>
+        <li><strong>Speed up HR requisitions.</strong> Hold intake meetings and set response deadlines for hiring managers.</li>
+        <li><strong>Match hiring to headcount.</strong> Track target against hires for each requisition, and close a requisition once it is filled.</li>
+      </ul>
+    </section>
+
+    <section id="method">
+      <h2>How I built it</h2>
+      <ol class="steps">
+        <li>Structured the candidate and requisition data as Excel Tables.</li>
+        <li>Added calculated columns for time to join, joined flag and time to fill, using lookups on Job ID.</li>
+        <li>Built PivotTables and PivotCharts for the funnel, recruiters, sources, locations and departments.</li>
+        <li>Sorted each chart from highest to lowest and shaded bars from dark to light by rank.</li>
+        <li>Added slicers, KPI tiles, and a findings and suggestions panel.</li>
+        <li>Audited every metric against the raw data and corrected the three listed above.</li>
+      </ol>
+    </section>
+
+    <section id="tools">
+      <h2>Tools</h2>
+      <ul class="tools">
+        <li>Excel PivotTables</li>
+        <li>PivotCharts</li>
+        <li>Slicers</li>
+        <li>VLOOKUP and XLOOKUP</li>
+        <li>COUNTIFS and SUMIFS</li>
+        <li>Structured references</li>
+        <li>Calculated fields</li>
+      </ul>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>The data is illustrative and the samples are small, so treat differences of a few percentage points with caution.</p>
+    <p><a href="https://github.com/meghagowda812/recruitment-analytics-dashboard">Project repository</a> · <a href="https://www.linkedin.com/in/megha-gowda-93a274221">LinkedIn</a> · <a href="https://github.com/meghagowda812">GitHub profile</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
